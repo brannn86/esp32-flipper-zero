@@ -35,19 +35,25 @@ void setup() {
   pinMode(ledPin, OUTPUT);
 }
 
-void loop() {
-  currentSecounds = millis() / 1000;
-  receiveBtData();
-  decodeRfSignals();
-  checkLedState();
-  
-  if ((currentSecounds - previousSecoundsRecord) >= 4) {
-    previousSecoundsRecord = currentSecounds;
-    SerialBT.println("Good connection");
+void sendCurrentRfData() { // Sends the currently stored data in the microcontroller's memory to the phone over Bluetooth
+  if (receiverCounter != 0) {
+    for (int i=0; i<receiverCounter; i++) {
+      commandToSend = String(receivedCodes[i])+"|"+String(receivedProtocols[i]);
+      SerialBT.println(commandToSend);
+      delay(200);
+    }
+  } else {
+    SerialBT.println("empty memory");
   }
 }
 
-// Method declarations
+void sendCodeOverRfModule(int code, int protocol) { // Sends the code got from the parameter over the radio module
+  blinkLed = true;
+  // Optional set protocol (default is 1, will work for most outlets)
+  mySwitch.setProtocol(protocol);
+  mySwitch.send(code, 24);
+}
+
 void receiveBtData() { // Receives Bluetooth data sent from the Android device and acts accordingly
   if (SerialBT.available()) {
     receivedCommand += String((char)SerialBT.read());
@@ -67,25 +73,6 @@ void receiveBtData() { // Receives Bluetooth data sent from the Android device a
       receivedCommand = "";
     }
   }
-}
-
-void sendCurrentRfData() { // Sends the currently stored data in the microcontroller's memory to the phone over Bluetooth
-  if (receiverCounter != 0) {
-    for (int i=0; i<receiverCounter; i++) {
-      commandToSend = String(receivedCodes[i])+"|"+String(receivedProtocols[i]);
-      SerialBT.println(commandToSend);
-      delay(200);
-    }
-  } else {
-    SerialBT.println("empty memory");
-  }
-}
-
-void sendCodeOverRfModule(int code, int protocol) { // Sends the code got from the parameter over the radio module
-  blinkLed = true;
-  // Optional set protocol (default is 1, will work for most outlets)
-  mySwitch.setProtocol(protocol);
-  mySwitch.send(code, 24);
 }
 
 void decodeRfSignals() { // Decodes the 433/315 signals received by the module, and stores them into local arrays
@@ -133,5 +120,17 @@ void checkLedState() { // Checks whether the led should blink
       }
       previousMillisLed = currentMillisLed;
     }
+  }
+}
+
+void loop() {
+  currentSecounds = millis() / 1000;
+  receiveBtData();
+  decodeRfSignals();
+  checkLedState();
+  
+  if ((currentSecounds - previousSecoundsRecord) >= 4) {
+    previousSecoundsRecord = currentSecounds;
+    SerialBT.println("Good connection");
   }
 }
